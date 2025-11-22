@@ -238,14 +238,28 @@
                     
                     <div class="filter-group">
                         <label>Distrito</label>
-                        <select id="distritoFilter">
+                        <select id="precintoFilter">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group"> 
+                        <label>BC</label>
+                        <select id="centroCodigoFilter">
                             <option value="">Todos</option>
                         </select>
                     </div>
 
                     <div class="filter-group">
-                        <label>BC</label>
-                        <select id="bcFilter">
+                        <label>Usuario</label>
+                        <select id="usuarioFilter">
+                            <option value="">Todos</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Canal</label>
+                        <select id="canalFilter">
                             <option value="">Todos</option>
                         </select>
                     </div>
@@ -320,7 +334,15 @@
                 skipEmptyLines: true,
                 complete: function(results) {
                     console.log('Datos parseados:', results.data.length);
-                    allData = results.data.filter(row => row.X && row.Y);
+                    
+                    // Mostrar nombres de columnas disponibles
+                    if (results.data.length > 0) {
+                        console.log('=== COLUMNAS DISPONIBLES EN EL CSV ===');
+                        console.log(Object.keys(results.data[0]));
+                        console.log('=====================================');
+                    }
+                    
+                    allData = results.data.filter(row => row.Longitud && row.Latitud);
                     filteredData = [...allData];
                     
                     console.log('Datos válidos:', allData.length);
@@ -342,39 +364,65 @@
         });
 
         function populateFilters() {
-            const distritos = [...new Set(allData.map(d => d.DISTRITO).filter(Boolean))].sort();
-            const bcs = [...new Set(allData.map(d => d.BC).filter(Boolean))].sort();
+            const precintos = [...new Set(allData.map(d => d.Precinto).filter(Boolean))].sort();
+            const centrosCodigo = [...new Set(allData.map(d => d['Centro de Codigo']).filter(Boolean))].sort();
+            const usuarios = [...new Set(allData.map(d => d['Usuario']).filter(Boolean))].sort();
+            const canales = [...new Set(allData.map(d => d['Tipo de canal']).filter(Boolean))].sort();
 
-            const distritoSelect = document.getElementById('distritoFilter');
-            const bcSelect = document.getElementById('bcFilter');
+            const precintoSelect = document.getElementById('precintoFilter');
+            const centroCodigoSelect = document.getElementById('centroCodigoFilter');
+            const usuarioSelect = document.getElementById('usuarioFilter');
+            const canalSelect = document.getElementById('canalFilter');
 
-            distritoSelect.innerHTML = '<option value="">Todos</option>';
-            distritos.forEach(distrito => {
+            precintoSelect.innerHTML = '<option value="">Todos</option>';
+            precintos.forEach(precinto => {
                 const option = document.createElement('option');
-                option.value = distrito;
-                option.textContent = distrito;
-                distritoSelect.appendChild(option);
+                option.value = precinto;
+                option.textContent = precinto;
+                precintoSelect.appendChild(option);
             });
 
-            bcSelect.innerHTML = '<option value="">Todos</option>';
-            bcs.forEach(bc => {
+            centroCodigoSelect.innerHTML = '<option value="">Todos</option>';
+            centrosCodigo.forEach(centro => {
                 const option = document.createElement('option');
-                option.value = bc;
-                option.textContent = bc;
-                bcSelect.appendChild(option);
+                option.value = centro;
+                option.textContent = centro;
+                centroCodigoSelect.appendChild(option);
+            });
+
+            usuarioSelect.innerHTML = '<option value="">Todos</option>';
+            usuarios.forEach(usuario => {
+                const option = document.createElement('option');
+                option.value = usuario;
+                option.textContent = usuario;
+                usuarioSelect.appendChild(option);
+            });
+
+            canalSelect.innerHTML = '<option value="">Todos</option>';
+            canales.forEach(canal => {
+                const option = document.createElement('option');
+                option.value = canal;
+                option.textContent = canal;
+                canalSelect.appendChild(option);
             });
         }
 
-        document.getElementById('distritoFilter').addEventListener('change', applyFilters);
-        document.getElementById('bcFilter').addEventListener('change', applyFilters);
+        document.getElementById('precintoFilter').addEventListener('change', applyFilters);
+        document.getElementById('centroCodigoFilter').addEventListener('change', applyFilters);
+        document.getElementById('usuarioFilter').addEventListener('change', applyFilters);
+        document.getElementById('canalFilter').addEventListener('change', applyFilters);
 
         function applyFilters() {
-            const distrito = document.getElementById('distritoFilter').value;
-            const bc = document.getElementById('bcFilter').value;
+            const precinto = document.getElementById('precintoFilter').value;
+            const centroCodigo = document.getElementById('centroCodigoFilter').value;
+            const usuario = document.getElementById('usuarioFilter').value;
+            const canal = document.getElementById('canalFilter').value;
 
             filteredData = allData.filter(row => {
-                if (distrito && row.DISTRITO !== distrito) return false;
-                if (bc && row.BC !== bc) return false;
+                if (precinto && row.Precinto !== precinto) return false;
+                if (centroCodigo && row['Centro de Codigo'] !== centroCodigo) return false;
+                if (usuario && row['Usuario'] !== usuario) return false;
+                if (canal && row['Tipo de canal'] !== canal) return false;
                 return true;
             });
 
@@ -393,8 +441,8 @@
             const bounds = [];
 
             filteredData.forEach(row => {
-                const lat = parseFloat(row.Y);
-                const lon = parseFloat(row.X);
+                const lat = parseFloat(row.Latitud);
+                const lon = parseFloat(row.Longitud);
 
                 if (!isNaN(lat) && !isNaN(lon)) {
                     const marker = L.circleMarker([lat, lon], {
@@ -407,9 +455,12 @@
                     }).addTo(map);
                     
                     marker.bindPopup(`
-                        <b>${row.DISTRITO || 'N/A'}</b><br>
-                        BC: ${row.BC || 'N/A'}<br>
-                        Provincia: ${row.PROVINCIA || 'N/A'}
+                        <b>${row.Precinto || 'N/A'}</b><br>
+                        Centro de Código: ${row['Centro de Codigo'] || 'N/A'}<br>
+                        Provincia: ${row.Provincia || 'N/A'}<br>
+                        Código de canal: ${row['Codigo de canal'] || 'N/A'}<br>
+                        Usuario: ${row['Usuario'] || 'N/A'}<br>
+                        Canal: ${row['Tipo de canal'] || 'N/A'}
                     `);
                     
                     marker.data = row;
@@ -482,8 +533,8 @@
             let minDistance = Infinity;
 
             filteredData.forEach(row => {
-                const lat = parseFloat(row.Y);
-                const lon = parseFloat(row.X);
+                const lat = parseFloat(row.Latitud);
+                const lon = parseFloat(row.Longitud);
 
                 if (!isNaN(lat) && !isNaN(lon)) {
                     const distance = calculateDistance(
@@ -512,9 +563,13 @@
 
             distance.textContent = `${location.distance.toFixed(2)} km`;
             info.innerHTML = `
-                <div><strong>📍 ${location.DISTRITO || 'N/A'}</strong></div>
-                <div>BC: ${location.BC || 'N/A'}</div>
-                <div>Provincia: ${location.PROVINCIA || 'N/A'}</div>
+                <div><strong>📍 ${location.Precinto || 'N/A'}</strong></div>
+                <div>BC: ${location['Centro de Codigo'] || 'N/A'}</div>
+                <div>Provincia: ${location.Provincia || 'N/A'}</div>
+                <div>Código: ${location['Codigo de canal'] || 'N/A'}</div>
+                <div>Usuario: ${location['Usuario'] || 'N/A'}</div>
+                <div>Canal: ${location['Tipo de canal'] || 'N/A'}</div>
+                <div>Cel: ${location['Numero telefonico'] || 'N/A'}</div>
             `;
 
             card.classList.add('show');
@@ -527,7 +582,7 @@
             }
 
             markers.forEach(marker => {
-                if (marker.data.X === location.X && marker.data.Y === location.Y) {
+                if (marker.data.Longitud === location.Longitud && marker.data.Latitud === location.Latitud) {
                     marker.setStyle({
                         radius: 12,
                         fillColor: "#10b981"
